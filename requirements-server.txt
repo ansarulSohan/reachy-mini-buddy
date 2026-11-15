@@ -1,0 +1,7 @@
+# Server / Docker install (Linux). For a Mac with the robot or simulator, use requirements.txt.
+reachy-mini[mujoco]>=1.14
+pillow>=10.1                    # 3D view rendering helpers
+anthropic>=2.8                  # Claude writes the stories
+edge-tts>=7.3                   # neural voices in 5 languages
+faster-whisper>=1.2             # speech-to-text on CPU
+opencv-python-headless>=4.10    # JPEG encoding for the 3D view

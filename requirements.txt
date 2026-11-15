@@ -1,0 +1,10 @@
+reachy-mini[mujoco]>=1.14
+pillow>=10.1  # only for `record` (video captions)
+
+# story / web modes
+anthropic>=2.8          # Claude writes the stories (set ANTHROPIC_API_KEY)
+edge-tts>=7.3           # neural voices: English, Norsk, Bangla, Hindi, Urdu
+sounddevice>=0.5        # computer microphone + speakers
+opencv-python-headless>=5.0  # face detection (story mode without the browser)
+faster-whisper>=1.2     # speech-to-text (any platform)
+mlx-whisper>=0.4; sys_platform == "darwin" and platform_machine == "arm64"  # faster on Apple Silicon

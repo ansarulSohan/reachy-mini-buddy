@@ -1,0 +1,7 @@
+.venv
+.git
+logs
+recordings
+**/__pycache__
+*.pyc
+.DS_Store

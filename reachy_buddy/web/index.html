@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reachy Mini Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Noto+Sans+Bengali:wght@400;600&family=Noto+Sans+Devanagari:wght@400;600&family=Noto+Naskh+Arabic:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fbf7f1; --surface: #ffffff; --surface-2: #f4eee6; --border: #e7ddd0;
+  --text: #2b2420; --muted: #7a6d62; --accent: #ff7a59; --accent-ink: #ffffff;
+  --accent-soft: #ffe6dd; --ok: #2f9e6e; --warn: #c9821b; --bad: #d64545; --info: #4c7fd6;
+  --happy: #f2b705; --sad: #4c7fd6; --surprised: #a35bd6; --angry: #e0533d; --confused: #2fa3a3; --neutral: #9a8f86;
+  --shadow: 0 1px 2px rgba(60,40,20,.06), 0 6px 20px rgba(60,40,20,.06);
+  --font: "Nunito", "Noto Sans Bengali", "Noto Sans Devanagari", "Noto Naskh Arabic", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17130f; --surface: #221c17; --surface-2: #2b241e; --border: #3a3129;
+    --text: #f3ebe3; --muted: #b3a597; --accent: #ff8a6b; --accent-ink: #1b120d; --accent-soft: #3d241b;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17130f; --surface: #221c17; --surface-2: #2b241e; --border: #3a3129;
+  --text: #f3ebe3; --muted: #b3a597; --accent: #ff8a6b; --accent-ink: #1b120d; --accent-soft: #3d241b;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); }
+body { min-height: 100vh; }
+button, select, input, textarea { font: inherit; color: inherit; }
+
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 12px 24px;
+  border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 5; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; }
+.brand svg { width: 30px; height: 30px; }
+nav { display: flex; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 999px; flex-wrap: wrap; }
+nav button { border: 0; background: transparent; padding: 8px 14px; border-radius: 999px; cursor: pointer;
+  font-weight: 700; color: var(--muted); white-space: nowrap; }
+nav button[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.spacer { flex: 1; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted);
+  padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--neutral); flex: none; }
+.dot.ok { background: var(--ok); } .dot.busy { background: var(--warn); } .dot.bad { background: var(--bad); } .dot.info { background: var(--info); }
+
+main { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 20px; padding: 20px 24px 32px;
+  max-width: 1400px; margin: 0 auto; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 16px; } header { padding: 12px 16px; } }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--shadow); padding: 18px; }
+.card h2 { margin: 0 0 4px; font-size: 20px; }
+.card h3 { margin: 0 0 10px; font-size: 13px; color: var(--muted); font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.sub { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
+
+/* Reachy 3D view + camera */
+.screen { position: relative; border-radius: 14px; overflow: hidden; background: #0d1520; aspect-ratio: 4 / 3; }
+.screen video, .screen img, .screen canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.screen.mirror video, .screen.mirror canvas { transform: scaleX(-1); }
+.screen .hint { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; text-align: center;
+  padding: 20px; font-size: 15px; background: rgba(0,0,0,.55); }
+.caption { position: absolute; left: 12px; right: 12px; bottom: 12px; background: rgba(20,14,10,.78); color: #fff;
+  border-radius: 14px; padding: 10px 14px; font-size: 17px; line-height: 1.45; backdrop-filter: blur(4px); }
+.caption b { color: #ffb39e; }
+.statebadge { position: absolute; top: 12px; left: 12px; background: rgba(20,14,10,.72); color: #fff; border-radius: 999px;
+  padding: 6px 12px; font-weight: 800; font-size: 14px; display: inline-flex; gap: 8px; align-items: center; }
+.cam-small { aspect-ratio: 4 / 3; }
+.cam-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; margin-top: 12px; }
+
+/* controls */
+label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; color: var(--muted); }
+select, input[type="text"], textarea { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 10px 12px; font-size: 15px; outline: none; }
+select:focus, textarea:focus { border-color: var(--accent); }
+textarea { resize: vertical; min-height: 70px; width: 100%; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.row > * { flex: 1 1 140px; }
+.btn { border: 1px solid var(--border); background: var(--surface); padding: 10px 16px; border-radius: 12px; cursor: pointer;
+  font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.05); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.rec { background: var(--bad); border-color: var(--bad); color: #fff; }
+.btn.on { background: var(--ok); border-color: var(--ok); color: #fff; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px dashed var(--border); background: transparent; border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.switch input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+/* live */
+.hero { display: flex; align-items: center; gap: 16px; }
+.hero .big-emoji { font-size: 58px; line-height: 1; }
+.hero .t { font-size: 24px; font-weight: 800; }
+.mic { display: flex; align-items: center; gap: 14px; background: var(--surface-2); border-radius: 14px; padding: 12px 14px; }
+.meter { flex: 1; height: 10px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.meter > div { height: 100%; width: 0; background: var(--ok); transition: width .08s; }
+.heard { background: var(--surface-2); border-radius: 14px; padding: 12px 14px; min-height: 50px; font-size: 16px; }
+.heard b { color: var(--info); }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.tile { background: var(--surface-2); border-radius: 14px; padding: 14px 10px; text-align: center; }
+.tile .v { font-size: 38px; line-height: 1.15; font-weight: 800; }
+.tile .k { font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.tile .s { font-size: 14px; color: var(--muted); text-transform: capitalize; }
+.steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.steps li { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; }
+.steps li span:first-child { width: 24px; height: 24px; border-radius: 50%; background: var(--surface-2); display: grid; place-items: center;
+  font-size: 13px; font-weight: 800; flex: none; }
+.steps li.done span:first-child { background: var(--ok); color: #fff; }
+.mini-story { background: var(--accent-soft); border-radius: 14px; padding: 12px 14px; }
+
+/* story */
+.story-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+.story-title { font-size: 22px; font-weight: 800; margin: 0 0 6px; }
+.badge { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.progress { height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; margin: 6px 0 4px; }
+.progress > div { height: 100%; width: 0; background: var(--accent); transition: width .4s; }
+.paras { max-height: 420px; overflow: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; }
+.para { display: flex; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface); font-size: 17px; line-height: 1.55; opacity: .75; }
+.para.now { background: var(--accent-soft); opacity: 1; outline: 2px solid var(--accent); }
+.para .m { font-size: 20px; line-height: 1.3; }
+.empty { color: var(--muted); text-align: center; padding: 28px 10px; }
+
+/* mood */
+.big { display: flex; align-items: center; gap: 18px; }
+.big .emoji { font-size: 84px; line-height: 1; width: 110px; text-align: center; }
+.big .label { font-size: 34px; font-weight: 800; text-transform: capitalize; }
+.bars { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.bar { display: grid; grid-template-columns: 110px 1fr 44px; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; text-transform: capitalize; }
+.bar .track { height: 12px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.bar .fill { height: 100%; width: 0; border-radius: 999px; transition: width .15s; }
+.bar .v { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* fingers */
+.count { font-size: 140px; font-weight: 800; line-height: 1; text-align: center; color: var(--accent); font-variant-numeric: tabular-nums; }
+.hands { display: flex; justify-content: center; gap: 14px; margin-top: 6px; }
+.hand { background: var(--surface-2); border-radius: 14px; padding: 10px 16px; text-align: center; min-width: 120px; }
+.hand b { font-size: 28px; display: block; }
+.dots10 { display: flex; justify-content: center; gap: 8px; margin: 16px 0 4px; flex-wrap: wrap; }
+.dots10 span { width: 22px; height: 22px; border-radius: 50%; background: var(--surface-2); border: 2px solid var(--border); transition: .15s; }
+.dots10 span.on { background: var(--accent); border-color: var(--accent); }
+
+.log { font-size: 13px; color: var(--muted); max-height: 160px; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="9" width="22" height="17" rx="8" fill="var(--accent)"/><circle cx="12" cy="17" r="2.6" fill="var(--surface)"/><circle cx="20" cy="17" r="2.6" fill="var(--surface)"/><path d="M11 9 L8 3 M21 9 L24 3" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"/></svg>
+    Reachy Mini
+  </div>
+  <nav role="tablist">
+    <button role="tab" data-tab="live" aria-selected="true">🤖 Live</button>
+    <button role="tab" data-tab="story" aria-selected="false">📖 Story teller</button>
+    <button role="tab" data-tab="mood" aria-selected="false">😊 Mood reader</button>
+    <button role="tab" data-tab="fingers" aria-selected="false">✋ Finger counter</button>
+  </nav>
+  <div class="spacer"></div>
+  <span class="pill"><span class="dot" id="robotDot"></span><span id="robotState">connecting…</span></span>
+  <span class="pill"><span class="dot" id="claudeDot"></span><span id="claudeState">Claude</span></span>
+</header>
+
+<main>
+  <!-- left: Reachy and what it sees -->
+  <section class="stack">
+    <div class="card">
+      <h3>Reachy</h3>
+      <div class="screen" id="robotScreen">
+        <img id="robotView" alt="Live 3D view of Reachy Mini">
+        <div class="statebadge" id="stateBadge">💤 Asleep</div>
+        <div class="caption" id="caption" hidden></div>
+        <div class="hint" id="robotHint" hidden></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>What Reachy sees</h3>
+      <div class="screen mirror cam-small" id="cam">
+        <video id="video" autoplay playsinline muted></video>
+        <img id="robotImg" alt="" hidden>
+        <canvas id="overlay"></canvas>
+        <div class="hint" id="camHint">Starting the camera… allow camera access when the browser asks.</div>
+      </div>
+      <div class="cam-bar">
+        <label class="field" style="flex:1 1 170px">Camera
+          <select id="camSource">
+            <option value="webcam">This computer's webcam</option>
+            <option value="robot">Reachy's head camera</option>
+          </select>
+        </label>
+        <label class="field" style="flex:1 1 170px">Reachy speaks
+          <select id="speakLang"><option value="">Auto (your language)</option></select>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- right: dashboards -->
+  <section>
+    <!-- LIVE -->
+    <div class="card stack" data-panel="live">
+      <div class="hero">
+        <div class="big-emoji" id="heroEmoji">💤</div>
+        <div>
+          <div class="t" id="heroTitle">Reachy is asleep</div>
+          <div class="sub" style="margin:0" id="heroSub">Turn on the microphone and say “Hi Reachy”.</div>
+        </div>
+      </div>
+
+      <button class="btn primary" id="soundBtn" hidden>🔊 Turn on Reachy's voice</button>
+
+      <div class="mic">
+        <button class="btn primary" id="listenBtn">🎙 Start listening</button>
+        <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+          <div class="meter"><div id="meter"></div></div>
+          <span class="sub" style="margin:0" id="micState">Microphone is off</span>
+        </div>
+      </div>
+
+      <div class="heard" id="heardBox"><span style="color:var(--muted)">What you say will appear here.</span></div>
+
+      <div class="tiles">
+        <div class="tile"><div class="k">You</div><div class="v" id="tFace">👀</div><div class="s" id="tFaceS">looking…</div></div>
+        <div class="tile"><div class="k">Mood</div><div class="v" id="tMood">🙂</div><div class="s" id="tMoodS">neutral</div></div>
+        <div class="tile"><div class="k">Fingers</div><div class="v" id="tFingers">0</div><div class="s" id="tFingersS">show me!</div></div>
+      </div>
+
+      <div class="mini-story" id="miniStory" hidden>
+        <div style="display:flex;gap:10px;align-items:center;justify-content:space-between">
+          <b id="miniTitle" dir="auto">Story</b>
+          <button class="btn" id="miniStop">⏹ Stop</button>
+        </div>
+        <div class="progress"><div id="miniProg"></div></div>
+        <div id="miniPara" dir="auto" style="font-size:16px;line-height:1.5"></div>
+      </div>
+
+      <div>
+        <h3>Try this</h3>
+        <ol class="steps" id="steps">
+          <li data-step="wake"><span>1</span><span>Say <b>“Hi Reachy”</b> to wake it up.</span></li>
+          <li data-step="fingers"><span>2</span><span>Hold up <b>1 to 10 fingers</b>. Reachy says how many.</span></li>
+          <li data-step="story"><span>3</span><span>Say <b>“Reachy, tell me a story about a little dragon”</b>.</span></li>
+          <li data-step="mood"><span>4</span><span>Make a <b>happy, sad, surprised, angry or confused</b> face. Reachy asks about it.</span></li>
+          <li data-step="away"><span>5</span><span><b>Walk out of the camera</b> for a few seconds, then come back.</span></li>
+          <li data-step="sleep"><span>6</span><span>Say <b>“Good night, Reachy”</b> to put it to sleep.</span></li>
+        </ol>
+      </div>
+
+      <div class="row">
+        <button class="btn" id="wakeBtn" style="flex:0 1 auto">☀️ Wake up</button>
+        <button class="btn" id="sleepBtn" style="flex:0 1 auto">🌙 Sleep</button>
+        <label class="switch" style="flex:1 1 220px"><input type="checkbox" id="autoReact" checked> Reachy reacts by itself</label>
+      </div>
+    </div>
+
+    <!-- STORY -->
+    <div class="card stack" data-panel="story" hidden>
+      <div>
+        <h2>Story teller</h2>
+        <p class="sub">Say or type what the story should be about. Reachy writes it with Claude and tells it out loud, 1 to 10 minutes.</p>
+      </div>
+      <label class="field">Story idea
+        <textarea id="request" placeholder="A brave little cat who finds a lost star…" dir="auto"></textarea>
+      </label>
+      <div class="chips" id="ideas">
+        <button class="chip">a brave little cat</button>
+        <button class="chip">a dragon who is afraid of the dark</button>
+        <button class="chip">a rainbow fish who shares</button>
+        <button class="chip">a robot who learns to dance</button>
+        <button class="chip">en liten hest på eventyr</button>
+        <button class="chip">একটা ছোট্ট হাতির গল্প</button>
+        <button class="chip">चाँद पर खरगोश</button>
+        <button class="chip">ایک ننھی چڑیا کی کہانی</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="micBtn" style="flex:0 0 auto">🎤 Speak</button>
+        <span id="heard" class="sub" style="margin:0;flex:1 1 200px"></span>
+      </div>
+      <div class="row">
+        <label class="field">Language
+          <select id="storyLang"><option value="">Auto (the child's language)</option></select>
+        </label>
+        <label class="field">Child's age
+          <select id="age"><option value="">Any (1–10)</option></select>
+        </label>
+        <label class="field"><span>Length: <span id="minLabel">3 minutes</span></span>
+          <input type="range" id="minutes" min="1" max="10" value="3">
+        </label>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="tellBtn">📖 Tell the story</button>
+        <button class="btn" id="stopBtn" disabled>⏹ Stop</button>
+      </div>
+      <div class="card" style="background:var(--surface-2);box-shadow:none">
+        <div class="empty" id="storyEmpty">The story will appear here while Reachy tells it.</div>
+        <div id="storyLive" hidden>
+          <p class="story-title" id="storyTitle" dir="auto"></p>
+          <div class="story-head" id="storyBadges"></div>
+          <div class="progress"><div id="storyProg"></div></div>
+          <div class="sub" id="storyTime" style="margin:0 0 10px"></div>
+          <div class="paras" id="paras"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOOD -->
+    <div class="card stack" data-panel="mood" hidden>
+      <div>
+        <h2>Mood reader</h2>
+        <p class="sub">Reachy looks at your face: happy, sad, surprised, angry or confused. When it changes, Reachy asks about it.</p>
+      </div>
+      <div class="big">
+        <div class="emoji" id="moodEmoji">🙂</div>
+        <div>
+          <div class="label" id="moodLabel">neutral</div>
+          <div class="sub" style="margin:0" id="moodHint">Make a face!</div>
+        </div>
+      </div>
+      <div class="bars" id="moodBars"></div>
+      <div class="row">
+        <button class="btn primary" id="moodAsk">🤖 Ask Reachy: how do I look?</button>
+        <button class="btn" id="moodCal" title="Look normal for 2 seconds so Reachy learns your resting face">🎯 Learn my normal face</button>
+      </div>
+    </div>
+
+    <!-- FINGERS -->
+    <div class="card stack" data-panel="fingers" hidden>
+      <div>
+        <h2>Finger counter</h2>
+        <p class="sub">Hold up 1 to 10 fingers with one or two hands. Reachy counts them and says the number.</p>
+      </div>
+      <div class="count" id="fingerCount">0</div>
+      <div class="dots10" id="dots10"></div>
+      <div class="hands">
+        <div class="hand"><span class="sub">Left hand</span><b id="handL">–</b></div>
+        <div class="hand"><span class="sub">Right hand</span><b id="handR">–</b></div>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="fingerAsk">🤖 Reachy, count my fingers!</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3>Activity</h3>
+      <div class="log" id="log"></div>
+    </div>
+  </section>
+</main>
+
+<script type="module">
+import { FilesetResolver, FaceLandmarker, HandLandmarker, DrawingUtils }
+  from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+const $ = (id) => document.getElementById(id);
+const MOODS = ["happy", "sad", "surprised", "angry", "confused"];
+const EMOJI = { happy: "😄", sad: "😢", surprised: "😮", angry: "😠", confused: "😕", neutral: "🙂",
+  calm: "🌙", excited: "🤩", worried: "😟", curious: "🧐", funny: "😂", sleepy: "😴" };
+const LANGS = { en: "English", no: "Norsk", bn: "বাংলা (Bangla)", hi: "हिंदी (Hindi)", ur: "اردو (Urdu)" };
+let tab = "live", st = { busy: null, asleep: true, face: false, mood: "neutral", fingers: 0 }, lastEvent = 0;
+
+// ---------------------------------------------------------------- setup UI
+for (const [c, n] of Object.entries(LANGS)) { $("storyLang").add(new Option(n, c)); $("speakLang").add(new Option(n, c)); }
+for (let a = 1; a <= 10; a++) $("age").add(new Option(`${a} year${a > 1 ? "s" : ""}`, String(a)));
+for (let i = 0; i < 10; i++) $("dots10").appendChild(document.createElement("span"));
+for (const m of MOODS) $("moodBars").insertAdjacentHTML("beforeend",
+  `<div class="bar"><span>${EMOJI[m]} ${m}</span><div class="track"><div class="fill" id="bar-${m}" style="background:var(--${m})"></div></div><span class="v" id="val-${m}">0</span></div>`);
+$("speakLang").value = localGet("speakLang") || "";
+$("speakLang").onchange = () => { localSet("speakLang", $("speakLang").value); api("/api/settings", { lang: $("speakLang").value || null }); };
+api("/api/settings", { lang: $("speakLang").value || null }).catch(() => {});
+$("autoReact").onchange = () => api("/api/settings", { auto: $("autoReact").checked });
+$("minutes").oninput = () => $("minLabel").textContent = `${$("minutes").value} minute${$("minutes").value > 1 ? "s" : ""}`;
+document.querySelectorAll("#ideas .chip").forEach(b => b.onclick = () => { $("request").value = b.textContent; });
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+function setTab(t) {
+  tab = t;
+  document.querySelectorAll("nav button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === t));
+  document.querySelectorAll("[data-panel]").forEach(p => p.hidden = p.dataset.panel !== t);
+  localSet("tab", t);
+}
+setTab(localGet("tab") || "live");
+function localGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
+function localSet(k, v) { try { localStorage.setItem(k, v); } catch {} }
+const fixedLang = () => $("speakLang").value || "";
+
+async function api(path, body, raw) {
+  const opt = body === undefined ? {} : { method: "POST", body: raw ? body : JSON.stringify(body),
+    headers: raw ? {} : { "Content-Type": "application/json" } };
+  const r = await fetch(path, opt);
+  let data = {}; try { data = await r.json(); } catch {}
+  return { ok: r.ok, status: r.status, data };
+}
+function log(text) {
+  const d = document.createElement("div");
+  d.textContent = `${new Date().toLocaleTimeString()}  ${text}`; d.dir = "auto";
+  $("log").prepend(d);
+  while ($("log").children.length > 80) $("log").lastChild.remove();
+}
+function markStep(s) { document.querySelector(`#steps [data-step="${s}"]`)?.classList.add("done"); }
+
+// ---------------------------------------------------------------- Reachy 3D view
+$("robotView").src = "/api/robot.mjpg";
+$("robotView").onerror = () => { $("robotHint").hidden = false; $("robotHint").textContent = "The 3D view is not available."; };
+
+// ---------------------------------------------------------------- status + events
+(async () => {
+  try {
+    const { data } = await api("/api/status");
+    $("claudeDot").className = "dot " + (data.claude ? "ok" : "bad");
+    $("claudeState").textContent = data.claude ? "Claude stories" : "Built-in story (no API key)";
+    $("claudeState").title = data.claude_error || data.model;
+    if (data.view_error) { $("robotHint").hidden = false; $("robotHint").textContent = data.view_error; }
+    browserAudio = !!data.browser_audio; $("soundBtn").hidden = !browserAudio || !!voiceCtx;
+  } catch {}
+})();
+
+let storyTarget = 180, paraEls = [], captionTimer = null, busyEndedAt = 0, loaded = false;
+
+// ---------------------------------------------------------------- Reachy's voice in the browser (server deployments)
+// Browsers only allow sound after a click, so the first click anywhere turns the voice on.
+let browserAudio = false, voiceCtx = null, voiceSrc = null;
+function unlockVoice() {
+  if (voiceCtx) return;
+  voiceCtx = new AudioContext(); voiceCtx.resume();
+  $("soundBtn").hidden = true;
+}
+document.addEventListener("click", unlockVoice);
+$("soundBtn").onclick = unlockVoice;
+async function playVoice(id) {
+  if (!browserAudio) return;
+  if (!voiceCtx) { $("soundBtn").hidden = false; return; }
+  try {
+    const r = await fetch(`/api/audio/${id}`); if (!r.ok) return;
+    const buf = await voiceCtx.decodeAudioData(await r.arrayBuffer());
+    stopVoice();
+    voiceSrc = voiceCtx.createBufferSource(); voiceSrc.buffer = buf;
+    voiceSrc.connect(voiceCtx.destination); voiceSrc.start();
+  } catch (err) { log(`Sound error: ${err.message}`); }
+}
+function stopVoice() { try { voiceSrc?.stop(); } catch {} voiceSrc = null; }
+async function poll() {
+  try {
+    const { data } = await api(`/api/events?after=${lastEvent}`);
+    if (st.busy && !data.busy) busyEndedAt = performance.now();
+    st = data;
+    for (const e of data.events) { lastEvent = e.id; if (loaded || !e.kind.startsWith("audio")) handle(e); }
+    loaded = true;
+    renderState();
+  } catch {
+    $("robotDot").className = "dot bad"; $("robotState").textContent = "server offline";
+  }
+  setTimeout(poll, 200);
+}
+poll();
+
+function renderState() {
+  const s = st.busy === "story" ? ["📖", "Reachy is telling a story", "Listen! Press Stop to end it.", "busy", "📖 Telling a story"]
+    : st.busy ? ["💬", "Reachy is talking", "Wait a moment, then answer.", "busy", "💬 Talking"]
+    : st.asleep ? ["💤", "Reachy is asleep", "Say “Hi Reachy” to wake it up.", "info", "💤 Asleep"]
+    : ["🤖", "Reachy is awake", "Show fingers, make a face, or ask for a story.", "ok", "👀 Awake"];
+  $("heroEmoji").textContent = s[0]; $("heroTitle").textContent = s[1]; $("heroSub").textContent = s[2];
+  $("robotDot").className = "dot " + s[3]; $("robotState").textContent = s[1];
+  $("stateBadge").textContent = s[4];
+  $("tellBtn").disabled = !!st.busy; $("stopBtn").disabled = st.busy !== "story";
+  $("miniStory").hidden = st.busy !== "story";
+  $("tFace").textContent = st.face ? "🙋" : "🫥"; $("tFaceS").textContent = st.face ? "I see you" : "not here";
+}
+
+function showCaption(text) {
+  $("caption").innerHTML = ""; const b = document.createElement("b"); b.textContent = "Reachy: ";
+  const s = document.createElement("span"); s.textContent = text; s.dir = "auto";
+  $("caption").append(b, s); $("caption").hidden = false;
+  clearTimeout(captionTimer); captionTimer = setTimeout(() => $("caption").hidden = true, 9000);
+}
+
+function handle(e) {
+  if (e.kind === "audio") { playVoice(e.id); return; }
+  if (e.kind === "audio_stop") { stopVoice(); return; }
+  if (e.kind === "say") { showCaption(e.text); log(`Reachy (${e.lang}): ${e.text}`); }
+  else if (e.kind === "heard") {
+    $("heardBox").innerHTML = ""; const b = document.createElement("b"); b.textContent = "You: ";
+    const s = document.createElement("span"); s.textContent = e.text; s.dir = "auto";
+    const t = document.createElement("span"); t.className = "sub"; t.style.marginLeft = "8px";
+    t.textContent = `(${LANGS[e.lang] || e.lang || "?"}${e.intent ? " · " + e.intent : ""})`;
+    $("heardBox").append(b, s, t); log(`You (${e.lang}): ${e.text}`);
+    if (e.intent === "sleep") markStep("sleep");
+  }
+  else if (e.kind === "state") { if (!e.asleep) markStep("wake"); log(e.asleep ? "Reachy fell asleep" : "Reachy woke up"); }
+  else if (e.kind === "story_start") {
+    markStep("story");
+    $("storyEmpty").hidden = false; $("storyEmpty").textContent = "Reachy is thinking of a story…";
+    $("storyLive").hidden = true; $("paras").innerHTML = ""; paraEls = [];
+    $("miniTitle").textContent = "Thinking of a story…"; $("miniPara").textContent = ""; $("miniProg").style.width = "0";
+    log(`Story requested: ${e.request || "(Reachy picks)"}`);
+  } else if (e.kind === "meta") {
+    storyTarget = e.minutes * 60;
+    $("storyEmpty").hidden = true; $("storyLive").hidden = false;
+    $("storyTitle").textContent = e.title || "Story"; $("miniTitle").textContent = `📖 ${e.title || "Story"}`;
+    $("storyBadges").innerHTML = "";
+    for (const t of [e.language, `${e.minutes} min`, e.source === "claude" ? "written by Claude" : "built-in story"]) {
+      const s = document.createElement("span"); s.className = "badge"; s.textContent = t; $("storyBadges").append(s);
+    }
+    if (e.error) log(`Note: ${e.error}`);
+  } else if (e.kind === "para") {
+    paraEls.forEach(p => p.classList.remove("now"));
+    const p = document.createElement("div"); p.className = "para now"; p.dir = "auto";
+    const m = document.createElement("span"); m.className = "m"; m.textContent = EMOJI[e.mood] || "🌙"; m.title = e.mood;
+    const t = document.createElement("span"); t.textContent = e.text;
+    p.append(m, t); $("paras").append(p); paraEls.push(p);
+    if (tab === "story") p.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    const done = e.spoken + e.duration, pct = `${Math.min(100, 100 * done / storyTarget)}%`;
+    $("storyProg").style.width = pct; $("miniProg").style.width = pct; $("miniPara").textContent = e.text;
+    $("storyTime").textContent = `${fmt(done)} told · about ${fmt(storyTarget)} planned`;
+    showCaption(e.text);
+  } else if (e.kind === "story_end") {
+    paraEls.forEach(p => p.classList.remove("now"));
+    $("storyProg").style.width = "100%";
+    $("storyTime").textContent = `${e.stopped ? "Stopped" : "The end"} · ${fmt(e.spoken)} · ${e.paragraphs} paragraphs`;
+    log(e.stopped ? "Story stopped" : `Story finished (${fmt(e.spoken)})`);
+  } else if (e.kind === "mood") { markStep("mood"); log(`Reachy noticed: ${e.mood}`); }
+  else if (e.kind === "fingers") { markStep("fingers"); log(`Reachy counted ${e.count} finger(s)`); }
+  else if (e.kind === "warn") log(`⚠ ${e.text}`);
+}
+const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+
+$("wakeBtn").onclick = () => api("/api/wake", {});
+$("sleepBtn").onclick = () => api("/api/sleep", {});
+$("miniStop").onclick = $("stopBtn").onclick = () => api("/api/stop", {});
+
+// ---------------------------------------------------------------- always-on listening
+// Simple voice-activity detection in the browser; each utterance goes to Whisper on the server.
+let audio = null;
+$("listenBtn").onclick = () => audio ? stopListening() : startListening();
+async function startListening() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    const ctx = new AudioContext(); const src = ctx.createMediaStreamSource(stream);
+    const proc = ctx.createScriptProcessor(4096, 1, 1); src.connect(proc); proc.connect(ctx.destination);
+    audio = { stream, ctx, proc, floor: 0.01, pre: [], chunks: null, quiet: 0, len: 0, sending: false };
+    proc.onaudioprocess = (e) => onAudio(e.inputBuffer.getChannelData(0), ctx.sampleRate);
+    $("listenBtn").className = "btn on"; $("listenBtn").textContent = "🎙 Listening";
+    $("micState").textContent = "Listening… say “Hi Reachy”";
+  } catch (err) { $("micState").textContent = `Microphone unavailable: ${err.message}`; }
+}
+function stopListening() {
+  audio.proc.disconnect(); audio.stream.getTracks().forEach(t => t.stop()); audio.ctx.close(); audio = null;
+  $("listenBtn").className = "btn primary"; $("listenBtn").textContent = "🎙 Start listening";
+  $("micState").textContent = "Microphone is off"; $("meter").style.width = "0";
+}
+function onAudio(data, sr) {
+  const a = audio; if (!a) return;
+  let sum = 0; for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+  const rms = Math.sqrt(sum / data.length), dt = data.length / sr;
+  $("meter").style.width = `${Math.min(100, rms * 900)}%`;
+  const muted = st.busy || a.sending || performance.now() - busyEndedAt < 700;
+  if (muted) {
+    a.chunks = null; a.pre = [];
+    $("micState").textContent = a.sending ? "Understanding…" : "Waiting while Reachy talks…";
+    $("meter").style.background = "var(--neutral)";
+    return;
+  }
+  $("meter").style.background = "var(--ok)";
+  const thresh = Math.max(0.018, a.floor * 3.5);
+  const chunk = new Float32Array(data);
+  if (!a.chunks) {
+    a.floor = 0.97 * a.floor + 0.03 * rms;
+    a.pre.push(chunk); if (a.pre.length > 6) a.pre.shift();
+    if (rms > thresh) { a.chunks = [...a.pre]; a.quiet = 0; a.len = 0; $("micState").textContent = "Hearing you…"; }
+    else $("micState").textContent = st.asleep ? "Listening… say “Hi Reachy”" : "Listening…";
+    return;
+  }
+  a.chunks.push(chunk); a.len += dt;
+  a.quiet = rms > thresh * 0.8 ? 0 : a.quiet + dt;
+  if (a.quiet > 0.9 || a.len > 12) {
+    const chunks = a.chunks, spoken = a.len - a.quiet; a.chunks = null; a.pre = [];
+    if (spoken > 0.35) sendUtterance(chunks, sr);
+  }
+}
+async function sendUtterance(chunks, sr) {
+  audio.sending = true;
+  try {
+    const wav = encodeWav(chunks, sr, 16000), lang = fixedLang();
+    const r = await api(`/api/hear${lang ? "?lang=" + lang : ""}`, wav, true);
+    if (r.ok && r.data.text && r.data.action === "ignored") log(`(heard “${r.data.text}”, nothing to do)`);
+    if (!r.ok) log(`Speech error: ${r.data.error || r.status}`);
+  } catch (err) { log(`Speech error: ${err.message}`); }
+  finally { if (audio) audio.sending = false; busyEndedAt = performance.now(); }
+}
+function encodeWav(chunks, srIn, srOut) {
+  const total = chunks.reduce((n, c) => n + c.length, 0), all = new Float32Array(total);
+  let o = 0; for (const c of chunks) { all.set(c, o); o += c.length; }
+  const ratio = srIn / srOut, n = Math.floor(total / ratio), buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  const w = (p, s) => { for (let i = 0; i < s.length; i++) v.setUint8(p + i, s.charCodeAt(i)); };
+  w(0, "RIFF"); v.setUint32(4, 36 + n * 2, true); w(8, "WAVE"); w(12, "fmt "); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, srOut, true); v.setUint32(28, srOut * 2, true);
+  v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, "data"); v.setUint32(40, n * 2, true);
+  for (let i = 0; i < n; i++) {
+    const s = Math.max(-1, Math.min(1, all[Math.floor(i * ratio)]));
+    v.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7fff, true);
+  }
+  return new Blob([buf], { type: "audio/wav" });
+}
+
+// ---------------------------------------------------------------- story controls (manual)
+let heardLang = null;
+$("tellBtn").onclick = async () => {
+  const r = await api("/api/story", { request: $("request").value, lang: $("storyLang").value || null,
+    heard: heardLang, minutes: Number($("minutes").value), age: $("age").value || null });
+  if (!r.ok) log("Reachy is busy, try again in a moment.");
+};
+let rec = null, recChunks = [], recTimer = null;
+$("micBtn").onclick = async () => {
+  if (rec && rec.state === "recording") { rec.stop(); return; }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+    recChunks = []; rec = new MediaRecorder(stream);
+    rec.ondataavailable = (e) => recChunks.push(e.data);
+    rec.onstop = async () => {
+      clearTimeout(recTimer); stream.getTracks().forEach(t => t.stop());
+      $("micBtn").className = "btn"; $("micBtn").textContent = "🎤 Speak";
+      $("heard").textContent = "Understanding…";
+      const lang = $("storyLang").value;
+      const r = await api(`/api/transcribe${lang ? "?lang=" + lang : ""}`, new Blob(recChunks, { type: rec.mimeType }), true);
+      if (r.ok && r.data.text) {
+        $("request").value = r.data.text; heardLang = r.data.lang;
+        $("heard").textContent = `Heard in ${LANGS[r.data.lang] || r.data.lang}. Press “Tell the story”, or pick the language if it's wrong.`;
+      } else $("heard").textContent = r.data.error ? `Speech error: ${r.data.error}` : "I didn't hear anything. Try again?";
+    };
+    rec.start(); $("micBtn").className = "btn rec"; $("micBtn").textContent = "⏺ Listening… click to stop";
+    $("heard").textContent = "Speak now: say what the story should be about, and how long.";
+    recTimer = setTimeout(() => rec.state === "recording" && rec.stop(), 15000);
+  } catch (err) { $("heard").textContent = `Microphone unavailable: ${err.message}`; }
+};
+
+// ---------------------------------------------------------------- camera + vision
+const video = $("video"), img = $("robotImg"), overlay = $("overlay"), octx = overlay.getContext("2d");
+const grab = document.createElement("canvas"), gctx = grab.getContext("2d");
+let source = "webcam", faceLm = null, handLm = null, drawer = new DrawingUtils(octx);
+
+async function startCamera() {
+  source = $("camSource").value;
+  $("cam").classList.toggle("mirror", source === "webcam");
+  video.hidden = source !== "webcam"; img.hidden = source !== "robot";
+  $("camHint").hidden = false;
+  if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+  if (source === "webcam") {
+    try {
+      video.srcObject = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+      await video.play(); $("camHint").hidden = true;
+    } catch (err) { $("camHint").textContent = `Camera unavailable: ${err.message}`; }
+  } else {
+    img.src = "/api/camera.mjpg?" + Date.now();
+    img.onload = () => $("camHint").hidden = true;
+    img.onerror = () => $("camHint").textContent = "Reachy's camera stream is not available.";
+  }
+}
+$("camSource").onchange = startCamera;
+startCamera();
+
+async function loadModels() {
+  const files = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+  faceLm = await FaceLandmarker.createFromOptions(files, {
+    baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate: "GPU" },
+    runningMode: "VIDEO", numFaces: 1, outputFaceBlendshapes: true });
+  handLm = await HandLandmarker.createFromOptions(files, {
+    baseOptions: { modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task", delegate: "GPU" },
+    runningMode: "VIDEO", numHands: 2 });
+  log("Face and hand tracking ready");
+}
+loadModels().catch(err => { $("camHint").hidden = false; $("camHint").textContent = `Could not load face/hand tracking: ${err.message}`; });
+
+let lastTs = -1, lastPost = 0, loopErrors = 0, seen = { face: null, mood: "neutral", fingers: 0 };
+function frameSource() {
+  if (source === "webcam") return video.readyState >= 2 ? video : null;
+  if (!img.complete || !img.naturalWidth) return null;
+  grab.width = img.naturalWidth; grab.height = img.naturalHeight; gctx.drawImage(img, 0, 0);
+  return grab;
+}
+function loop() {
+  requestAnimationFrame(loop);
+  try { track(); } catch (err) { if (loopErrors++ < 3) log(`Tracking error: ${err.message}`); }
+}
+function track() {
+  const src = frameSource();
+  if (!src || !faceLm) return;
+  const w = src.videoWidth || src.width, h = src.videoHeight || src.height;
+  if (overlay.width !== w) { overlay.width = w; overlay.height = h; }
+  let ts = performance.now(); if (ts <= lastTs) ts = lastTs + 1; lastTs = ts;
+  octx.clearRect(0, 0, w, h);
+
+  const face = faceLm.detectForVideo(src, ts), lm = face.faceLandmarks?.[0];
+  if (lm) {
+    let x0 = 1, y0 = 1, x1 = 0, y1 = 0;
+    for (const p of lm) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
+    octx.strokeStyle = "rgba(255,138,107,.9)"; octx.lineWidth = 3;
+    octx.strokeRect(x0 * w, y0 * h, (x1 - x0) * w, (y1 - y0) * h);
+    seen.face = { x: (x0 + x1) - 1, y: (y0 + y1) - 1, size: x1 - x0, source };
+    const shapes = face.faceBlendshapes?.[0]?.categories;
+    seen.mood = shapes ? moodFrame(shapes) : "neutral";
+  } else { seen.face = null; seen.mood = "neutral"; showMood(null); }
+
+  if (handLm) seen.fingers = fingerFrame(handLm.detectForVideo(src, ts), w, h);
+
+  $("tMood").textContent = EMOJI[seen.mood]; $("tMoodS").textContent = seen.face ? seen.mood : "–";
+  $("tFingers").textContent = seen.fingers; $("tFingersS").textContent = seen.fingers ? (seen.fingers === 1 ? "finger" : "fingers") : "show me!";
+
+  if (ts - lastPost > 150) {  // ~7 times a second: Reachy's brain decides what to do
+    lastPost = ts;
+    api("/api/perceive", { face: seen.face, mood: seen.face ? seen.mood : null, fingers: seen.fingers }).catch(() => {});
+  }
+}
+requestAnimationFrame(loop);
+
+// ---------------------------------------------------------------- mood (from MediaPipe's 52 face blendshapes)
+let baseline = null, calib = null, smooth = Object.fromEntries(MOODS.map(m => [m, 0]));
+function moodFrame(categories) {
+  const raw = {}; for (const c of categories) raw[c.categoryName] = c.score;
+  if (calib) { calib.push(raw); if (performance.now() - calib.t0 > 2000) finishCalib(); }
+  const b = (n) => Math.max(0, (raw[n] || 0) - (baseline?.[n] || 0));
+  const avg = (a, c) => (b(a) + b(c)) / 2;
+  const smile = avg("mouthSmileLeft", "mouthSmileRight"), frown = avg("mouthFrownLeft", "mouthFrownRight");
+  const browDown = avg("browDownLeft", "browDownRight"), browUp = avg("browOuterUpLeft", "browOuterUpRight");
+  const inner = b("browInnerUp"), jaw = b("jawOpen"), wide = avg("eyeWideLeft", "eyeWideRight");
+  const sneer = avg("noseSneerLeft", "noseSneerRight"), press = avg("mouthPressLeft", "mouthPressRight");
+  const squint = avg("eyeSquintLeft", "eyeSquintRight");
+  const asym = Math.abs(b("browOuterUpLeft") - b("browOuterUpRight")) + Math.abs(b("browDownLeft") - b("browDownRight"));
+  const side = Math.max(b("mouthLeft"), b("mouthRight")), pucker = b("mouthPucker");
+  const s = {
+    happy: 1.25 * smile,
+    surprised: 0.55 * jaw + 0.45 * browUp + 0.5 * wide + 0.2 * inner - 0.6 * smile,
+    sad: 1.3 * frown + 0.6 * inner * (1 - browUp) + 0.3 * b("mouthShrugLower") - 0.8 * smile - 0.3 * jaw,
+    angry: 0.95 * browDown + 0.6 * sneer + 0.4 * press + 0.25 * squint - 0.7 * smile - 0.3 * inner,
+    confused: 1.1 * asym + 0.7 * side + 0.3 * pucker + 0.25 * browDown * (inner > 0.15 ? 1 : 0) - 0.6 * smile,
+  };
+  for (const m of MOODS) smooth[m] = 0.7 * smooth[m] + 0.3 * Math.max(0, Math.min(1, s[m]));
+  const best = MOODS.reduce((a, m) => smooth[m] > smooth[a] ? m : a, "happy");
+  const mood = smooth[best] > 0.28 ? best : "neutral";
+  if (tab === "mood") showMood(mood);
+  return mood;
+}
+function showMood(mood) {
+  if (tab !== "mood") return;
+  for (const m of MOODS) {
+    const v = mood ? smooth[m] : 0;
+    $(`bar-${m}`).style.width = `${Math.round(100 * v)}%`; $(`val-${m}`).textContent = Math.round(100 * v);
+  }
+  $("moodEmoji").textContent = mood ? EMOJI[mood] : "👀";
+  $("moodLabel").textContent = mood || "looking for you…";
+  $("moodHint").textContent = mood ? (mood === "neutral" ? "Make a face! Smile, frown, or look surprised." : "Hold it for a moment and Reachy will ask about it.") : "Look at the camera.";
+}
+$("moodAsk").onclick = async () => {
+  if (seen.mood === "neutral") { log("Make a clear face first: Reachy sees a neutral face."); return; }
+  const r = await api("/api/mood", { mood: seen.mood, lang: fixedLang() || null });
+  if (!r.ok) log("Reachy is busy, try again in a moment.");
+};
+$("moodCal").onclick = () => { baseline = null; calib = []; calib.t0 = performance.now(); log("Learning your normal face: look relaxed for 2 seconds…"); };
+function finishCalib() {
+  const keys = Object.keys(calib[0] || {}); baseline = {};
+  for (const k of keys) baseline[k] = calib.reduce((a, r) => a + (r[k] || 0), 0) / calib.length;
+  calib = null; log("Got it! Reachy now knows your normal face.");
+}
+
+// ---------------------------------------------------------------- fingers
+function fingerFrame(res, w, h) {
+  let total = 0; const per = { Left: null, Right: null };
+  (res.landmarks || []).forEach((lm, i) => {
+    const n = countFingers(lm, w / h);
+    // MediaPipe labels hands as if the image were mirrored; ours is not, so swap.
+    const label = res.handednesses?.[i]?.[0]?.categoryName === "Left" ? "Right" : "Left";
+    per[label] = (per[label] || 0) + n; total += n;
+    drawer.drawConnectors(lm, HandLandmarker.HAND_CONNECTIONS, { color: "rgba(255,138,107,.9)", lineWidth: 3 });
+    drawer.drawLandmarks(lm, { color: "#fff", fillColor: "#ff7a59", radius: 3, lineWidth: 1 });
+  });
+  total = Math.min(10, total);
+  if (tab === "fingers") {
+    $("fingerCount").textContent = total;
+    $("handL").textContent = per.Left ?? "–"; $("handR").textContent = per.Right ?? "–";
+    [...$("dots10").children].forEach((d, i) => d.classList.toggle("on", i < total));
+  }
+  return total;
+}
+function countFingers(p, aspect) {
+  const d = (a, b) => Math.hypot((p[a].x - p[b].x) * aspect, p[a].y - p[b].y);
+  let n = 0;
+  for (const [tip, pip] of [[8, 6], [12, 10], [16, 14], [20, 18]])  // index..pinky: tip far from the wrist
+    if (d(0, tip) > d(0, pip) * 1.1) n++;
+  const palm = d(5, 17);  // thumb: tip away from the palm and the index knuckle
+  if (d(4, 17) > d(3, 17) * 1.05 && d(4, 5) > palm * 0.65) n++;
+  return n;
+}
+$("fingerAsk").onclick = async () => {
+  const r = await api("/api/fingers", { count: seen.fingers, lang: fixedLang() || null });
+  if (!r.ok) log("Reachy is busy, try again in a moment.");
+};
+</script>
+</body>
+</html>
